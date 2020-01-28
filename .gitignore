@@ -15,3 +15,6 @@ venv*
 
 #jekyll generated pages
 docs/.jekyll-metadata
+
+# logs folder for the crazy-practical
+cp_examples/logs/*
