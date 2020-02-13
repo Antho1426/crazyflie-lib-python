@@ -159,19 +159,16 @@ class LoggingExample:
 
 
 if __name__ == '__main__':
+
+    # Replace here the uri assigned to your team
+    uri = 'radio://0/80/2M/E7E7E7E701'
+
     # Initialize the low-level drivers (don't list the debug drivers)
     cflib.crtp.init_drivers(enable_debug_driver=False)
     # Scan for Crazyflies and use the first one found
-    print('Scanning interfaces for Crazyflies...')
-    available = cflib.crtp.scan_interfaces()
     print('Crazyflies found:')
-    for i in available:
-        print(i[0])
 
-    if len(available) > 0:
-        le = LoggingExample(available[0][0])
-    else:
-        print('No Crazyflies found, cannot run example')
+    le = LoggingExample(uri)
 
     # The Crazyflie lib doesn't contain anything to keep the application alive,
     # so this is where your application should do something. In our case we
