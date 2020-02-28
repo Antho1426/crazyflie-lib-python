@@ -52,6 +52,7 @@ class LoggingExample:
 
     def __init__(self, link_uri):
 
+        self.step_h = 50
         self.count = 0
         """ Initialize and run the example with the specified link_uri """
 
@@ -66,12 +67,17 @@ class LoggingExample:
         print('Connecting to %s' % link_uri)
 
         self.logs = np.zeros([100000,4])
+        self.logs_lidar = np.zeros([100000,1])
+        self.logs_pos = np.zeros([100000,3])
 
         # Try to connect to the Crazyflie
         # self._cf.open_link(link_uri)
 
         # Fly a square
-        self.fly_square(link_uri)
+        # self.fly_star(link_uri)
+
+        # Land platform in front
+        self.land_front(link_uri)
 
         # Variable used to keep main loop occupied until disconnect
         # self.is_connected = True
@@ -125,16 +131,132 @@ class LoggingExample:
 
         self._disconnected
 
+    def fly_star(self, uri):
+
+        with SyncCrazyflie(uri, cf=self._cf) as scf:
+            with PositionHlCommander(scf) as pc:
+                for i in xrange(2):
+
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(1.0,0.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(1.0,0.5,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(1.0,1.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(0.5,1.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(0.0,1.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(-0.5,1.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(-1.0,1.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(-1.0,0.5,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(-1.0,0.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(-1.0,-0.5,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(-1.0,-1.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(-0.5,-1.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(0.0,-1.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(0.5,-1.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(1.0,-1.0,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+                    pc.go_to(1.0,-0.5,1.0)
+                    pc.go_to(0.0,0.0,1.0)
+
+        self._disconnected
+
+
+    def land_front(self, uri):
+
+        with SyncCrazyflie(uri, cf=self._cf) as scf:
+            with PositionHlCommander(scf) as pc:
+
+                time.sleep(2)
+
+                step = False
+
+                while not step: 
+
+                    pc.forward(0.01)
+
+                    if self.count > 51:
+                        diff = self.logs_lidar[self.count-1] - self.logs_lidar[self.count-51]
+                    else:
+                        diff = 0
+
+                    print diff
+
+                    if diff < -self.step_h:
+                        step = True
+                        print('step!')
+
+                pc.back(0.1)
+
+                time.sleep(5)
+                
+                pc.right(0.50)
+                time.sleep(5)
+
+                step = False
+
+                while not step: 
+
+                    pc.left(0.01)
+
+                    if self.count > 51:
+                        diff = self.logs_lidar[self.count-1] - self.logs_lidar[self.count-51]
+                    else:
+                        diff = 0
+
+                    print diff
+
+                    if diff < -self.step_h:
+                        step = True
+                        print('step!')
+
+                pc.right(0.05)
+                time.sleep(1)
+
+        self._disconnected
+
     def _stab_log_error(self, logconf, msg):
         """Callback from the log API when an error occurs"""
         print('Error when logging %s: %s' % (logconf.name, msg))
 
     def _stab_log_data(self, timestamp, data, logconf):
         """Callback froma the log API when data arrives"""
-        print('[%d][%s]: %s' % (timestamp, logconf.name, data))
+        # print('[%d][%s]: %s' % (timestamp, logconf.name, data))
         
         for idx,i in enumerate(list(data)):
             self.logs[self.count][idx] = data[i]
+
+        self.logs_lidar[self.count][-1] = data['range.zrange']
+
+        # self.logs_pos[self.count][0:-1] = data['stateEstimate.x', 'stateEstimate.y', 'stateEstimate.z']
 
         self.count +=1
 
