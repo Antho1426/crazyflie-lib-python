@@ -32,7 +32,7 @@ import time
 from threading import Timer
 import datetime as dt
 
-import cflib.crtp  # noqa
+import cflib.crtp
 from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.log import LogConfig
 
@@ -47,14 +47,16 @@ from cflib.positioning.position_hl_commander import PositionHlCommander
 class LoggingExample:
     """
     Simple logging example class that logs the Stabilizer from a supplied
-    link uri and disconnects after 5s.
+    link id and disconnects after 5s.
     """
 
-    def __init__(self, link_uri):
+    def __init__(self, link_id):
+        """ Initialize and run the example with the specified link_id """
 
         self.count = 0
         """ Initialize and run the example with the specified link_uri """
 
+        # Initialize cf object
         self._cf = Crazyflie(rw_cache='./cache')
 
         # Connect some callbacks from the Crazyflie API
@@ -63,12 +65,10 @@ class LoggingExample:
         self._cf.connection_failed.add_callback(self._connection_failed)
         self._cf.connection_lost.add_callback(self._connection_lost)
 
-        print('Connecting to %s' % link_uri)
+        print('Connecting to %s' % link_id)
 
+        # Initialize log variable
         self.logs = np.zeros([100000,4])
-
-        # Try to connect to the Crazyflie
-        # self._cf.open_link(link_uri)
 
         # Fly a square
         self.fly_square(link_uri)
@@ -79,17 +79,14 @@ class LoggingExample:
     def _connected(self, link_uri):
         """ This callback is called form the Crazyflie API when a Crazyflie
         has been connected and the TOCs have been downloaded."""
-        print('Connected to %s' % link_uri)
+        print('Connected to %s' % link_id)
 
         # The definition of the logconfig can be made before connecting
         self._lg_stab = LogConfig(name='Stabilizer', period_in_ms=10)
-        # self._lg_stab.add_variable('stabilizer.roll', 'float')
-        # self._lg_stab.add_variable('stabilizer.pitch', 'float')
-        # self._lg_stab.add_variable('stabilizer.yaw', 'float')
-        self._lg_stab.add_variable('range.zrange', 'float')
-        self._lg_stab.add_variable('stateEstimate.x', 'float')
-        self._lg_stab.add_variable('stateEstimate.y', 'float')
-        self._lg_stab.add_variable('stateEstimate.z', 'float')
+        self._lg_stab.add_variable('range.zrange', 'float')     # Z ranger measurement
+        self._lg_stab.add_variable('stateEstimate.x', 'float')  # estimated X coordinate
+        self._lg_stab.add_variable('stateEstimate.y', 'float')  # estimated Y coordinate
+        self._lg_stab.add_variable('stateEstimate.z', 'float')  # estimated Z coordinate
 
         # Adding the configuration cannot be done until a Crazyflie is
         # connected, since we need to check that the variables we
@@ -108,20 +105,19 @@ class LoggingExample:
         except AttributeError:
             print('Could not add Stabilizer log config, bad configuration.')
 
-        # Start a timer to disconnect in 10s
-        # t = Timer(120, self._cf.close_link)
-        # t.start()
+    def fly_square(self, id):
+        """ Example of simple logico to make the drone fly in a square 
+        trajectory at fixed speed"""
 
-    def fly_square(self, uri):
-
-        with SyncCrazyflie(uri, cf=self._cf) as scf:
+        # Sync with drone
+        with SyncCrazyflie(id, cf=self._cf) as scf:
+            # Send position commands
             with PositionHlCommander(scf) as pc:
-                for i in xrange(1):
-                    pc.up(1.0)
-                    pc.forward(1.0)
-                    pc.left(1.0)
-                    pc.back(1.0)
-                    pc.right(1.0)
+                pc.up(1.0)
+                pc.forward(1.0)
+                pc.left(1.0)
+                pc.back(1.0)
+                pc.right(1.0)
 
         self._disconnected
 
@@ -133,28 +129,31 @@ class LoggingExample:
         """Callback froma the log API when data arrives"""
         print('[%d][%s]: %s' % (timestamp, logconf.name, data))
         
+        # Save info into log variable
         for idx,i in enumerate(list(data)):
             self.logs[self.count][idx] = data[i]
 
         self.count +=1
 
-    def _connection_failed(self, link_uri, msg):
+    def _connection_failed(self, link_id, msg):
         """Callback when connection initial connection fails (i.e no Crazyflie
         at the speficied address)"""
-        print('Connection to %s failed: %s' % (link_uri, msg))
+        print('Connection to %s failed: %s' % (link_id, msg))
         self.is_connected = False
 
-    def _connection_lost(self, link_uri, msg):
+    def _connection_lost(self, link_id, msg):
         """Callback when disconnected after a connection has been made (i.e
         Crazyflie moves out of range)"""
-        print('Connection to %s lost: %s' % (link_uri, msg))
+        print('Connection to %s lost: %s' % (link_id, msg))
 
-    def _disconnected(self, link_uri):
+    def _disconnected(self, link_id):
         """Callback when the Crazyflie is disconnected (called in all cases)"""
-        print('Disconnected from %s' % link_uri)
+        print('Disconnected from %s' % link_id)
         self.is_connected = False
 
+        # Get timestamp
         dtime = dt.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        # Save log to file
         np.savetxt('logs/'+dtime+'.csv', self.logs, delimiter=',')
 
 
@@ -172,6 +171,21 @@ if __name__ == '__main__':
         le = LoggingExample(available[0][0])
     else:
         print('No Crazyflies found, cannot run example')
+
+if __name__ == '__main__':
+    # Initialize the low-level drivers (don't list the debug drivers)
+    cflib.crtp.init_drivers(enable_debug_driver=False)
+
+    # uncomment to connect to the first available drone
+    id = connect_to_first_found()
+    # uncomment to connect to the selected drone
+    id = 'radio://0/80/2M/E7E7E7E7E7'
+
+    # Run example class
+    if id is not None:
+        le = LoggingExample(id)
+    else: 
+        print('Please provide a valid ID')
 
     # The Crazyflie lib doesn't contain anything to keep the application alive,
     # so this is where your application should do something. In our case we
