@@ -168,7 +168,7 @@ if __name__ == '__main__':
         print(i[0])
 
     if len(available) > 0:
-        le = LoggingExample(available[0][0])
+        return
     else:
         print('No Crazyflies found, cannot run example')
 
