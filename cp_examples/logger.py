@@ -54,7 +54,7 @@ class LoggingExample:
         """ Initialize and run the example with the specified link_id """
 
         self.count = 0
-        """ Initialize and run the example with the specified link_uri """
+        """ Initialize and run the example with the specified link_id """
 
         # Initialize cf object
         self._cf = Crazyflie(rw_cache='./cache')
@@ -71,12 +71,12 @@ class LoggingExample:
         self.logs = np.zeros([100000,4])
 
         # Fly a square
-        self.fly_square(link_uri)
+        self.fly_square(link_id)
 
         # Variable used to keep main loop occupied until disconnect
         # self.is_connected = True
 
-    def _connected(self, link_uri):
+    def _connected(self, link_id):
         """ This callback is called form the Crazyflie API when a Crazyflie
         has been connected and the TOCs have been downloaded."""
         print('Connected to %s' % link_id)
