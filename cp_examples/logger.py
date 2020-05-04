@@ -157,7 +157,7 @@ class LoggingExample:
         np.savetxt('logs/'+dtime+'.csv', self.logs, delimiter=',')
 
 
-if __name__ == '__main__':
+def connect_to_first_found():
     # Initialize the low-level drivers (don't list the debug drivers)
     cflib.crtp.init_drivers(enable_debug_driver=False)
     # Scan for Crazyflies and use the first one found
