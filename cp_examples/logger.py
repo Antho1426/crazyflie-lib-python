@@ -65,8 +65,6 @@ class LoggingExample:
         self._cf.connection_failed.add_callback(self._connection_failed)
         self._cf.connection_lost.add_callback(self._connection_lost)
 
-        print('Connecting to %s' % link_id)
-
         # Initialize log variable
         self.logs = np.zeros([100000,4])
 
@@ -79,7 +77,6 @@ class LoggingExample:
     def _connected(self, link_id):
         """ This callback is called form the Crazyflie API when a Crazyflie
         has been connected and the TOCs have been downloaded."""
-        print('Connected to %s' % link_id)
 
         # The definition of the logconfig can be made before connecting
         self._lg_stab = LogConfig(name='Stabilizer', period_in_ms=10)
@@ -114,10 +111,15 @@ class LoggingExample:
             # Send position commands
             with PositionHlCommander(scf) as pc:
                 pc.up(1.0)
+                # print('Moving up')
                 pc.forward(1.0)
+                # print('Moving forward')
                 pc.left(1.0)
+                # print('Moving left')
                 pc.back(1.0)
+                # print('Moving back')
                 pc.right(1.0)
+                # print('Moving right')
 
         self._disconnected
 
@@ -177,7 +179,7 @@ if __name__ == '__main__':
     cflib.crtp.init_drivers(enable_debug_driver=False)
 
     # uncomment to connect to the first available drone
-    id = connect_to_first_found()
+    # id = connect_to_first_found()
     # uncomment to connect to the selected drone
     id = 'radio://0/80/2M/E7E7E7E7E7'
 
